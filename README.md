@@ -86,7 +86,7 @@ diag-struct("toyunda_sub_t", toyunda_subtitle_s, :cheaders(@h));
 
 Its output
 
-`
+```
 Compiling a test file, this assume field names are the same
 -Perl6 name : wrong_rgba_color_s, C Name : rgba_color_t
 __has int32  $red : c-size=4 | nc-size=4 -- : 
@@ -116,4 +116,4 @@ __has int32  $fadingsize : c-size=4 | nc-size=4 -- :
 __has str  $image : c-size=4 | nc-size=4 -- : You should replace your 'str' type with 'Str'
 -Size given by sizeof and nativesizeof : C:100/NC:88
 -Calculated total sizes : C:100/NC:88
-`
+```
