@@ -10,3 +10,7 @@ my %typ = (GumboElement => ::("gumbo_element_s"), GumboDocument => ::("gumbo_doc
 
 
 diag-cstructs(:cheaders(@headers), :types(%typ), :clibs(@libs));
+
+my $t = ::("gumbo_node_s");
+diag-struct("GumboNode", $t, :cheaders(@headers), :clibs(@libs));
+

@@ -2,8 +2,8 @@ use NativeCall;
 use File::Temp;
 
 module NativeCall::TypeDiag {
-  my $c_header;
   
+  our @nctd-headersinclusion is export;
   sub diag-cstructs(:@cheaders, :@clibs = (), :%types) returns Bool is export {
 
   my @c_struct_list = %types.keys;
@@ -13,7 +13,7 @@ module NativeCall::TypeDiag {
   #for @nc_struct_list -> $t {
   #  say nativesizeof($t);
   #}
-  $c_header = "";
+  my $c_header = "";
   for @cheaders -> $s {
     $c_header ~= "#include <$s>\n";
   }
@@ -61,11 +61,15 @@ module NativeCall::TypeDiag {
 sub	diag-struct ($ctypename, $nctype, :@cheaders, :@clibs = ()) returns Bool is export {
       say "Compiling a test file, this assume field names are the same";
       my $cprintf = '"%d,';
-      say "Perl6 name : {$nctype.^name}, C Name : $ctypename\n";
+      say "-Perl6 name : {$nctype.^name}, C Name : $ctypename";
       my @t1 = "sizeof($ctypename)";
       for $nctype.^attributes -> $attr {
         $cprintf ~= "%d,";
         @t1.push("sizeof(piko.{$attr.name.substr(2)})")
+      }
+      my $c_header = "";
+      for @cheaders -> $s {
+	$c_header ~= "#include <$s>\n";
       }
       my $ncsize = nativesizeof($nctype);
       $cprintf = $cprintf.chop;
@@ -86,22 +90,41 @@ sub	diag-struct ($ctypename, $nctype, :@cheaders, :@clibs = ()) returns Bool is 
       my $scsize = @c_size.shift;
       my $totalc = 0;
       my $totalnc = 0;
+      my $gissue;
       for ($nctype.^attributes Z @c_size).flat -> $attr, $csize {
         my $psize;
+        my $issue = '';
         my $has =  $attr.inlined ?? 'HAS' !! 'has';
         if !$attr.inlined and $attr.type.REPR eq 'CStruct' {
           $psize = nativesizeof(OpaquePointer);
         } else {
-          $psize = nativesizeof($attr.type)
+	  try {
+	    $psize = nativesizeof($attr.type);
+	    CATCH {
+	      when X::AdHoc {
+	      $psize = nativesizeof(OpaquePointer) if $attr.type.^name eq 'Str';
+	      if $attr.type.^name ne 'Str' {
+	        $psize = 0;
+	        $issue = "You used a type that not supported by NativeCall in CStruct repr: {$attr.type.^name}";
+	      }
+	      }
+	    }
+          }
+        }
+        if $attr.type.^name eq 'str' {
+	  $issue = "You should replace your 'str' type with 'Str'";
         }
         my $S = '';
         $S = 'DONT MATCH' if $psize ne $csize;
-        say "For   $has {$attr.type.^name} "~$attr.name.substr(2)~" : c-size=$csize / nc-size="~$psize~" $S";
+        $issue = "C size match nativesizeof({$attr.type.^name}). put HAS instead of has " if $attr.type.REPR eq 'CStruct' and !$attr.inlined and $csize == nativesizeof($attr.type);
+        say "__$has {$attr.type.^name}  \$"~$attr.name.substr(2)~" : c-size=$csize | nc-size="~$psize~" -- $S: $issue";
         $totalc += $csize;
         $totalnc += $psize;
       }
-      say "Size given by sizeof and nativesizeof : C:$scsize/NC:$ncsize";
-      say "Calculated total sizes : C:$totalc/NC:$totalnc";
+      $gissue = "Your representation is smaller than the cstruct, but total size of fields match. Did you forget a field?" if $scsize > $ncsize and $totalc == $totalnc;
+      say "-Size given by sizeof and nativesizeof : C:$scsize/NC:$ncsize";
+      say "-Calculated total sizes : C:$totalc/NC:$totalnc";
+      say $gissue if $gissue;
       return True;
   }
 
@@ -112,7 +135,7 @@ sub     compile_c($c, @clibs) {
   $execfileh.close();
   #my $execfilename = "piko.exe";
   #run 'cp', '/root/piko.exe', $execfilename;
-  run 'cc', $cfilename, '-o', $execfilename, @clibs;
+  run 'cc', $cfilename, '-o', $execfilename, @clibs, @nctd-headersinclusion;
   return run $execfilename, :out;
 }
 
