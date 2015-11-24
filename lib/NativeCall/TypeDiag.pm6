@@ -3,7 +3,13 @@ use File::Temp;
 
 module NativeCall::TypeDiag {
   
-  our @nctd-headersinclusion is export;
+  our @nctd-extracompileroptions is export;
+  our $CC = 'cc';
+  our $silent = False;
+  
+  #sub say(*@a) {
+  #  say @a unless $silent;
+  #}
   sub diag-cstructs(:@cheaders, :@clibs = (), :%types) returns Bool is export {
 
   my @c_struct_list = %types.keys;
@@ -135,7 +141,7 @@ sub     compile_c($c, @clibs) {
   $execfileh.close();
   #my $execfilename = "piko.exe";
   #run 'cp', '/root/piko.exe', $execfilename;
-  run 'cc', $cfilename, '-o', $execfilename, @clibs, @nctd-headersinclusion;
+  run $CC, $cfilename, '-o', $execfilename, @clibs, @nctd-extracompileroptions;
   return run $execfilename, :out;
 }
 

@@ -43,7 +43,7 @@ class toyunda_subtitle_s is repr('CStruct') {
 	has	Str	$.text;
 	HAS	rgba_color_s	$.color1;
 	HAS	rgba_color_s	$.color2;
-	has	rgba_color_s	$.tmpcolor;
+	has	rgba_color_s	$.tmpcolor; # it should be HAS
 
 	has	num32		$.positionx;
 	has	num32		$.positiony;
@@ -56,12 +56,12 @@ class toyunda_subtitle_s is repr('CStruct') {
 	has	int32		$.size2;
 	has	int32		$.fadingsize;
 
-	has	str		$.image;
+	has	str		$.image; # bad use of str
 }
 
 my @h = <toyundatype.h>;
 my @l;
-@nctd-headersinclusion = "-I", "./";
+@nctd-extracompileroptions = "-I", "./";
 diag-struct("rgba_color_t", wrong_rgba_color_s, :cheaders(@h));
 say "----";
 diag-struct("toyunda_sub_t", toyunda_subtitle_s, :cheaders(@h));

@@ -1,14 +1,53 @@
 # Name NativeCall::Typediag
 
+# Synopsis
+
+```perl
+use v6;
+use Gumbo::Binding;
+use NativeCall::TypeDiag;
+my @headers = <gumbo.h>;
+my @libs = <-lgumbo>;
+
+my %typ;
+# Construct the type from the exported stuff
+for Gumbo::Binding::EXPORT::DEFAULT::.keys -> $export {
+  if ::($export).REPR eq 'CStruct' {
+    #convert foo_bar_s to FooBar
+    my $cname = $export.subst(/_s$/, '');
+    my @t = $cname.split('_').map: {.tc};
+    %typ{@t.join('')} = ::($export);
+  }
+}
+diag-cstructs(:cheaders(@headers), :types(%typ), :clibs(@libs));
+```
+
+
+# Description
+
 A module that provide functions to look at your native types. Comparing with the their C equivalent.
 
-## diag-struct
 
-Analyse the size of the fields of a CStruct and compare them to their C counterpart.
+## diag-struct ($ctypename, $nctype, :@cheaders, :@clibs = ())
 
-## diag-structs
+Analyse the size of the fields of a CStruct and compare them to their C counterpart. It also show potential mistakes
+
+return true if there is no error.
+
+@cheaders is what you need to include to compile a C file using the lib. @clibs is extra options to the compiler.
+
+## diag-cstructs(:@cheaders, :@clibs = (), :%types)
 
 Analyse a given list of structures
+
+%types pairs must look like this :
+"C name of the struct" => ::("name of NC type")
+
+return true if there is no error.
+
+## @nctd-extracompileroptions
+
+An array that is passed as option to the compiler `cc`
 
 ## Example
 
@@ -78,7 +117,7 @@ class toyunda_subtitle_s is repr('CStruct') {
 
 my @h = <toyundatype.h>;
 my @l;
-@nctd-headersinclusion = "-I", "./";
+@nctd-extracompileroptions = "-I", "./";
 diag-struct("rgba_color_t", wrong_rgba_color_s, :cheaders(@h));
 say "----";
 diag-struct("toyunda_sub_t", toyunda_subtitle_s, :cheaders(@h));

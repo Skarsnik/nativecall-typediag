@@ -4,10 +4,16 @@ use NativeCall::TypeDiag;
 my @headers = <gumbo.h>;
 my @libs = <-lgumbo>;
 
-
-my %typ = (GumboElement => ::("gumbo_element_s"), GumboDocument => ::("gumbo_document_s"), 
-"GumboText" => ::("gumbo_text_s"), GumboOutput =>  ::("gumbo_output_s"), GumboNode =>  ::("gumbo_node_s"));
-
+my %typ;
+# Construct the type from the exported stuff
+for Gumbo::Binding::EXPORT::DEFAULT::.keys -> $export {
+  if ::($export).REPR eq 'CStruct' {
+    #convert foo_bar_s to FooBar
+    my $cname = $export.subst(/_s$/, '');
+    my @t = $cname.split('_').map: {.tc};
+    %typ{@t.join('')} = ::($export);
+  }
+}
 
 diag-cstructs(:cheaders(@headers), :types(%typ), :clibs(@libs));
 
