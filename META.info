@@ -7,6 +7,6 @@
         "provides" : {
             "Gumbo" : "lib/NativeCall/TypeDiag.pm6"
         },
-        "depends" : [  ],
+        "depends" : [ "File::Temp" ],
         "source-url" : "git://github.com/Skarsnik/nativecall-typediag.git"
 }
